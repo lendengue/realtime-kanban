@@ -1,7 +1,7 @@
 {
   "name": "realtime-kanban",
   "private": true,
-  "description": "realtime-kanban — a local-first, real-time collaborative Kanban board.",
+  "description": "realtime-kanban \u2014 a local-first, real-time collaborative Kanban board.",
   "license": "MIT",
   "type": "module",
   "packageManager": "pnpm@12.21.0",
@@ -18,7 +18,10 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "infra:up": "docker compose up -d --wait",
-    "infra:down": "docker compose down"
+    "infra:down": "docker compose down",
+    "db:generate": "pnpm --filter @realtime-kanban/db db:generate",
+    "db:migrate": "pnpm --filter @realtime-kanban/db db:migrate",
+    "db:seed": "pnpm --filter @realtime-kanban/api db:seed"
   },
   "devDependencies": {
     "@realtime-kanban/config": "workspace:*",

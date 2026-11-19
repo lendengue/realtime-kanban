@@ -1,0 +1,41 @@
+{
+  "name": "@realtime-kanban/db",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Drizzle schema, migrations and Postgres client for realtime-kanban.",
+  "license": "MIT",
+  "type": "module",
+  "exports": {
+    ".": {
+      "@realtime-kanban/source": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "migrations"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "tsx --conditions=@realtime-kanban/source --env-file-if-exists=.env src/migrate-cli.ts",
+    "db:studio": "drizzle-kit studio"
+  },
+  "dependencies": {
+    "@realtime-kanban/shared": "workspace:*",
+    "drizzle-orm": "0.45.4",
+    "pg": "8.23.1"
+  },
+  "devDependencies": {
+    "@realtime-kanban/config": "workspace:*",
+    "@types/node": "22.20.5",
+    "@types/pg": "8.23.1",
+    "drizzle-kit": "0.31.11",
+    "eslint": "10.15.0",
+    "tsx": "4.23.15",
+    "typescript": "6.0.3"
+  }
+}
