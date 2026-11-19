@@ -35,9 +35,13 @@ export function base({ tsconfigRootDir }) {
       },
     },
     {
-      // Vitest's asymmetric matchers (expect.any, expect.stringContaining...) are typed as `any`.
       files: ['**/*.test.ts', '**/*.test.tsx'],
-      rules: { '@typescript-eslint/no-unsafe-assignment': 'off' },
+      rules: {
+        // Vitest's asymmetric matchers (expect.any, expect.stringContaining...) are typed as `any`.
+        '@typescript-eslint/no-unsafe-assignment': 'off',
+        // Tests index into fixtures they just built; a wrong assumption fails the test anyway.
+        '@typescript-eslint/no-non-null-assertion': 'off',
+      },
     },
     {
       files: ['**/*.js', '**/*.mjs', '**/*.cjs'],
