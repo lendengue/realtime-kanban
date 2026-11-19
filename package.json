@@ -1,0 +1,28 @@
+{
+  "name": "realtime-kanban",
+  "private": true,
+  "description": "realtime-kanban — a local-first, real-time collaborative Kanban board.",
+  "license": "MIT",
+  "type": "module",
+  "packageManager": "pnpm@12.21.0",
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "scripts": {
+    "dev": "pnpm infra:up && turbo run dev",
+    "dev:apps": "turbo run dev",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "infra:up": "docker compose up -d --wait",
+    "infra:down": "docker compose down"
+  },
+  "devDependencies": {
+    "@realtime-kanban/config": "workspace:*",
+    "prettier": "3.10.1",
+    "turbo": "2.11.13"
+  }
+}
