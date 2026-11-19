@@ -23,6 +23,6 @@
   "devDependencies": {
     "@realtime-kanban/config": "workspace:*",
     "prettier": "3.10.1",
-    "turbo": "2.11.13"
+    "turbo": "2.11.12"
   }
 }
