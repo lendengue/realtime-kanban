@@ -2,6 +2,12 @@ packages:
   - apps/*
   - packages/*
 
-# Only these dependencies may run install scripts (pnpm blocks all others).
+# Dependencies allowed (true) or explicitly denied (false) to run install scripts.
 allowBuilds:
+  # Native argon2 binding (uses prebuilt binaries via node-gyp-build).
+  argon2: true
   esbuild: true
+  # Transitive deps of testcontainers; their scripts are optional and not needed.
+  cpu-features: false
+  protobufjs: false
+  ssh2: false
