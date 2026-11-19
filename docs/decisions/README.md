@@ -19,3 +19,6 @@ using the next free number. Never rewrite an accepted ADR; supersede it with a n
 | [0012](0012-relational-data-conventions.md)           | Relational data conventions                                  | Accepted |
 | [0013](0013-testing-strategy-phase-1.md)              | API integration and early end-to-end tests                   | Accepted |
 | [0014](0014-web-app-conventions.md)                   | Web app conventions                                          | Accepted |
+| [0015](0015-board-document-operations.md)             | Board document operation semantics                           | Accepted |
+| [0016](0016-collab-server-auth-and-persistence.md)    | Collaboration server: authentication and persistence         | Accepted |
+| [0017](0017-board-ui.md)                              | Board UI: drag and drop and connection lifecycle             | Accepted |

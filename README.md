@@ -5,7 +5,7 @@
 [![CI](https://github.com/lendengue/realtime-kanban/actions/workflows/ci.yml/badge.svg)](https://github.com/lendengue/realtime-kanban/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-> 🚧 **Work in progress.** Phases 0–1 (foundation, auth and workspaces) are done. See the [roadmap](#roadmap).
+> 🚧 **Work in progress.** Phases 0–2 (foundation, auth and workspaces, collaborative board) are done. See the [roadmap](#roadmap).
 
 <!-- TODO(phase 5): GIF of two windows syncing side by side. -->
 
@@ -21,8 +21,23 @@ and a horizontally scalable collaboration server.
 
 ## How it works
 
-_To be written as the core lands (Phases 2–5)._ Architecture decisions are recorded in
-[`docs/decisions/`](docs/decisions/).
+Each board is a [Yjs](https://yjs.dev) document (a CRDT): every client applies changes locally and
+exchanges binary updates through the Hocuspocus server, and all replicas converge to the same
+state regardless of the order updates arrive in.
+
+Cards are **not** kept in per-column arrays. Moving an item inside a `Y.Array` is a delete plus an
+insert, so two people moving the same card at once could duplicate it. Instead every card stores
+its `columnId` and a `position` string generated with fractional indexing; a move rewrites just
+those two fields in one transaction, and the UI sorts by `position` (ties broken by id). A
+property-based test throws random concurrent operations at three replicas and checks that they
+end up identical, with no duplicated or lost cards.
+
+The collaboration server authenticates each WebSocket with the same short-lived JWT as the REST
+API, checks the user's role in Postgres (viewers connect read-only) and persists the document as a
+binary blob with debounced writes.
+
+_Offline-first and Redis scaling are described as they land (phases 3 and 5)._ All architecture
+decisions are recorded in [`docs/decisions/`](docs/decisions/).
 
 ## Stack
 
@@ -45,6 +60,7 @@ _To be written as the core lands (Phases 2–5)._ Architecture decisions are rec
 corepack enable                               # provides the pnpm version pinned in package.json
 pnpm install
 cp apps/api/.env.example apps/api/.env        # dev defaults (DATABASE_URL, JWT_SECRET, SMTP...)
+cp apps/collab/.env.example apps/collab/.env  # same JWT_SECRET as the API
 cp packages/db/.env.example packages/db/.env  # DATABASE_URL for migrations
 pnpm infra:up                                 # Postgres, Redis and Mailpit via Compose
 pnpm db:migrate
@@ -87,6 +103,7 @@ realtime-kanban/
 │   └── collab/    # Hocuspocus WebSocket server
 ├── packages/
 │   ├── shared/    # Zod schemas, roles/permissions, error codes
+│   ├── board-doc/ # Yjs board schema + pure operations (fractional indexing)
 │   ├── db/        # Drizzle schema, migrations, Postgres client
 │   └── config/    # shared tsconfig, ESLint and Prettier presets
 ├── e2e/           # Playwright tests
@@ -94,13 +111,11 @@ realtime-kanban/
 └── docker-compose.yml
 ```
 
-`packages/board-doc` arrives with the collaborative board (phase 2).
-
 ## Roadmap
 
 - [x] **Phase 0 — Foundation:** monorepo, shared configs, Docker Compose, CI.
 - [x] **Phase 1 — Auth and workspaces (REST):** auth with rotating refresh tokens, workspaces, members, invitations, boards list.
-- [ ] **Phase 2 — Collaborative board (core).**
+- [x] **Phase 2 — Collaborative board (core):** Yjs document + convergence tests, Hocuspocus with auth and Postgres persistence, board UI with keyboard-accessible drag and drop.
 - [ ] **Phase 3 — Presence, offline and undo.**
 - [ ] **Phase 4 — Product features.**
 - [ ] **Phase 5 — Scale and deploy.**
