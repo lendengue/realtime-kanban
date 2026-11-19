@@ -14,6 +14,11 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@dnd-kit/core": "6.3.1",
+    "@dnd-kit/sortable": "10.0.0",
+    "@dnd-kit/utilities": "3.2.2",
+    "@hocuspocus/provider": "4.8.0",
+    "@realtime-kanban/board-doc": "workspace:*",
     "@realtime-kanban/shared": "workspace:*",
     "@tanstack/react-query": "5.108.0",
     "@tanstack/react-router": "1.170.46",
@@ -25,6 +30,7 @@
     "react": "19.3.1",
     "react-dom": "19.3.1",
     "react-i18next": "18.0.2",
+    "yjs": "13.6.33",
     "zod": "4.6.7"
   },
   "devDependencies": {
