@@ -27,6 +27,8 @@ export function base({ tsconfigRootDir }) {
         '@typescript-eslint/consistent-type-imports': 'error',
         '@typescript-eslint/no-explicit-any': 'error',
         '@typescript-eslint/restrict-template-expressions': ['error', { allowNumber: true }],
+        // Allows `onClick={() => setOpen(false)}`-style shorthands.
+        '@typescript-eslint/no-confusing-void-expression': ['error', { ignoreArrowShorthand: true }],
       },
     },
     {
