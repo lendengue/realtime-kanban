@@ -6,7 +6,7 @@
   "license": "MIT",
   "type": "module",
   "scripts": {
-    "dev": "tsx watch --env-file-if-exists=.env src/server.ts",
+    "dev": "tsx watch --conditions=@realtime-kanban/source --env-file-if-exists=.env src/server.ts",
     "build": "tsc -p tsconfig.build.json",
     "start": "node --env-file-if-exists=.env dist/server.js",
     "lint": "eslint .",
@@ -14,16 +14,24 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@hocuspocus/extension-database": "4.8.0",
     "@hocuspocus/server": "4.8.0",
+    "@realtime-kanban/board-doc": "workspace:*",
+    "@realtime-kanban/db": "workspace:*",
+    "@realtime-kanban/shared": "workspace:*",
+    "drizzle-orm": "0.45.4",
     "pino": "10.4.0",
     "y-protocols": "1.0.7",
     "yjs": "13.6.33",
     "zod": "4.6.7"
   },
   "devDependencies": {
+    "@hocuspocus/provider": "4.8.0",
     "@realtime-kanban/config": "workspace:*",
+    "@testcontainers/postgresql": "12.2.1",
     "@types/node": "22.20.5",
     "eslint": "10.15.0",
+    "testcontainers": "12.2.1",
     "tsx": "4.23.15",
     "typescript": "6.0.3",
     "vitest": "5.1.1"
