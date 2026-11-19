@@ -21,7 +21,8 @@
     "infra:down": "docker compose down",
     "db:generate": "pnpm --filter @realtime-kanban/db db:generate",
     "db:migrate": "pnpm --filter @realtime-kanban/db db:migrate",
-    "db:seed": "pnpm --filter @realtime-kanban/api db:seed"
+    "db:seed": "pnpm --filter @realtime-kanban/api db:seed",
+    "test:e2e": "pnpm --filter @realtime-kanban/e2e test:e2e"
   },
   "devDependencies": {
     "@realtime-kanban/config": "workspace:*",

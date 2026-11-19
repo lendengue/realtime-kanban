@@ -1,6 +1,7 @@
 packages:
   - apps/*
   - packages/*
+  - e2e
 
 # Dependencies allowed (true) or explicitly denied (false) to run install scripts.
 allowBuilds:
