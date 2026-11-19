@@ -30,6 +30,11 @@ export function base({ tsconfigRootDir }) {
       },
     },
     {
+      // Vitest's asymmetric matchers (expect.any, expect.stringContaining...) are typed as `any`.
+      files: ['**/*.test.ts', '**/*.test.tsx'],
+      rules: { '@typescript-eslint/no-unsafe-assignment': 'off' },
+    },
+    {
       files: ['**/*.js', '**/*.mjs', '**/*.cjs'],
       extends: [tseslint.configs.disableTypeChecked],
     },
