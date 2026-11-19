@@ -20,6 +20,7 @@
     "@fastify/rate-limit": "11.2.2",
     "@fastify/swagger": "9.9.5",
     "@fastify/swagger-ui": "6.1.4",
+    "@realtime-kanban/board-doc": "workspace:*",
     "@realtime-kanban/db": "workspace:*",
     "@realtime-kanban/shared": "workspace:*",
     "argon2": "0.45.2",
@@ -28,6 +29,7 @@
     "fastify-type-provider-zod": "7.0.0",
     "jose": "6.2.17",
     "nodemailer": "10.6.0",
+    "yjs": "13.6.33",
     "zod": "4.6.7"
   },
   "devDependencies": {

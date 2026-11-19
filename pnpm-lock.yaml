@@ -202,6 +202,9 @@ importers:
       '@fastify/swagger-ui':
         specifier: 6.1.4
         version: 6.1.4
+      '@realtime-kanban/board-doc':
+        specifier: workspace:*
+        version: link:../../packages/board-doc
       '@realtime-kanban/db':
         specifier: workspace:*
         version: link:../../packages/db
@@ -226,6 +229,9 @@ importers:
       nodemailer:
         specifier: 10.6.0
         version: 10.6.0
+      yjs:
+        specifier: 13.6.33
+        version: 13.6.33
       zod:
         specifier: 4.6.7
         version: 4.6.7

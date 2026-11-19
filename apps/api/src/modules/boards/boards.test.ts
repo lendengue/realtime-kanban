@@ -1,5 +1,9 @@
+import { readBoard } from '@realtime-kanban/board-doc';
+import { schema } from '@realtime-kanban/db';
 import type { Board } from '@realtime-kanban/shared';
+import { eq } from 'drizzle-orm';
 import { describe, expect, it } from 'vitest';
+import * as Y from 'yjs';
 
 import { createBoard, workspaceWithAllRoles } from '../../test/fixtures.js';
 import { useTestApp, type TestUser } from '../../test/harness.js';
@@ -41,6 +45,23 @@ describe('boards', () => {
     const restored = await request(member, 'POST', `/boards/${board.id}/restore`);
     expect(restored.json()).toMatchObject({ board: { archivedAt: null } });
     expect((await listBoards(member, workspace.id)).map((b) => b.title)).toEqual(['Q1 roadmap']);
+  });
+
+  it('creates the initial Yjs document with the default columns', async () => {
+    const { workspace, member } = await workspaceWithAllRoles(t.app, t.lastAcceptUrl);
+    const board = await createBoard(t.app, member, workspace.id, 'Launch');
+
+    const [row] = await t.database.db
+      .select()
+      .from(schema.boardDocuments)
+      .where(eq(schema.boardDocuments.boardId, board.id));
+    expect(row).toBeDefined();
+
+    const doc = new Y.Doc();
+    Y.applyUpdate(doc, row!.state);
+    const view = readBoard(doc);
+    expect(view.title).toBe('Launch');
+    expect(view.columns.map((column) => column.title)).toEqual(['To do', 'In progress', 'Done']);
   });
 
   it('lets viewers list boards but not create, rename or archive them', async () => {

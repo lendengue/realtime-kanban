@@ -1,3 +1,4 @@
+import { createInitialBoardState } from '@realtime-kanban/board-doc';
 import { schema } from '@realtime-kanban/db';
 import {
   boardListResponseSchema,
@@ -106,11 +107,22 @@ export function boardRoutes(ctx: AppContext): FastifyPluginCallbackZod {
       async (request, reply) => {
         const userId = requireUserId(request);
         await requireWorkspacePermission(db, request.params.id, userId, 'boards:manage');
-        const [board] = await db
-          .insert(schema.boards)
-          .values({ workspaceId: request.params.id, title: request.body.title, createdBy: userId })
-          .returning();
-        if (!board) throw new Error('Board insert returned no row');
+        // The board row and its initial Yjs document (default columns) are created together.
+        const board = await db.transaction(async (tx) => {
+          const [created] = await tx
+            .insert(schema.boards)
+            .values({
+              workspaceId: request.params.id,
+              title: request.body.title,
+              createdBy: userId,
+            })
+            .returning();
+          if (!created) throw new Error('Board insert returned no row');
+          await tx
+            .insert(schema.boardDocuments)
+            .values({ boardId: created.id, state: createInitialBoardState(created.title) });
+          return created;
+        });
         return reply.status(201).send({ board: toBoard(board) });
       },
     );
