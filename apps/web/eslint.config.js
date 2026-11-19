@@ -3,6 +3,7 @@ import { react } from '@realtime-kanban/config/eslint/react';
 export default [
   ...react({ tsconfigRootDir: import.meta.dirname }),
   {
+    files: ['**/*.{ts,tsx}'],
     rules: {
       // TanStack Router control flow: `throw redirect(...)` / `throw notFound()`.
       '@typescript-eslint/only-throw-error': [

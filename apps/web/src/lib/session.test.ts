@@ -59,10 +59,10 @@ describe('session and api client', () => {
       .mockResolvedValueOnce(json(200, authBody('fresh')))
       .mockResolvedValueOnce(json(200, { ok: true }));
 
-    await expect(apiRequest('/workspaces', { schema: undefined })).resolves.toBeUndefined();
+    await expect(apiRequest('/workspaces')).resolves.toBeUndefined();
 
-    const calls = fetchMock.mock.calls.map(([url, init]) => [
-      String(url),
+    const calls = fetchMock.mock.calls.map(([input, init]) => [
+      input instanceof Request ? input.url : input.toString(),
       (init?.headers as Record<string, string> | undefined)?.authorization,
     ]);
     expect(calls).toEqual([
