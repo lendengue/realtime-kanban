@@ -5,7 +5,7 @@
 [![CI](https://github.com/lendengue/realtime-kanban/actions/workflows/ci.yml/badge.svg)](https://github.com/lendengue/realtime-kanban/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-> 🚧 **Work in progress.** Phase 0 (foundation) is done. See the [roadmap](#roadmap).
+> 🚧 **Work in progress.** Phases 0–1 (foundation, auth and workspaces) are done. See the [roadmap](#roadmap).
 
 <!-- TODO(phase 5): GIF of two windows syncing side by side. -->
 
@@ -33,6 +33,7 @@ _To be written as the core lands (Phases 2–5)._ Architecture decisions are rec
 | Collaboration | Yjs + Hocuspocus                                          |
 | API           | Fastify 5 + Zod                                           |
 | Data          | PostgreSQL 18 (Drizzle ORM), Redis 8                      |
+| Web data      | TanStack Router + Query, shadcn/ui, i18next               |
 | Quality       | ESLint (flat config, typescript-eslint), Prettier, Vitest |
 | Infra         | Docker Compose (local), GitHub Actions (CI)               |
 
@@ -41,15 +42,21 @@ _To be written as the core lands (Phases 2–5)._ Architecture decisions are rec
 **Requirements:** Node.js 22.12+ (see `.nvmrc`), Corepack (ships with Node), Docker with Compose.
 
 ```bash
-corepack enable          # provides the pnpm version pinned in package.json
+corepack enable                               # provides the pnpm version pinned in package.json
 pnpm install
-pnpm dev                 # starts Postgres, Redis and Mailpit via Compose, then all apps
+cp apps/api/.env.example apps/api/.env        # dev defaults (DATABASE_URL, JWT_SECRET, SMTP...)
+cp packages/db/.env.example packages/db/.env  # DATABASE_URL for migrations
+pnpm infra:up                                 # Postgres, Redis and Mailpit via Compose
+pnpm db:migrate
+pnpm db:seed                                  # alice@demo.dev / bob@demo.dev, password "password"
+pnpm dev                                      # infra + api, collab and web with hot reload
 ```
 
 | Service      | URL                          |
 | ------------ | ---------------------------- |
 | Web          | http://localhost:5173        |
 | API          | http://localhost:3000/health |
+| API docs     | http://localhost:3000/docs   |
 | Collab (WS)  | http://localhost:1234/health |
 | Mailpit (UI) | http://localhost:8025        |
 
@@ -62,7 +69,9 @@ Other useful scripts:
 pnpm dev:apps      # apps only, without starting Docker
 pnpm lint          # ESLint in every workspace
 pnpm typecheck     # tsc in every workspace
-pnpm test          # Vitest in every workspace
+pnpm test          # Vitest in every workspace (API integration tests need Docker)
+pnpm test:e2e      # Playwright against a running `pnpm dev` (first: pnpm --filter @realtime-kanban/e2e exec playwright install chromium)
+pnpm db:generate   # generate a migration after changing packages/db/src/schema.ts
 pnpm build         # production builds
 pnpm format        # Prettier
 pnpm infra:down    # stop the Compose services
@@ -77,17 +86,20 @@ realtime-kanban/
 │   ├── api/       # Fastify REST API
 │   └── collab/    # Hocuspocus WebSocket server
 ├── packages/
+│   ├── shared/    # Zod schemas, roles/permissions, error codes
+│   ├── db/        # Drizzle schema, migrations, Postgres client
 │   └── config/    # shared tsconfig, ESLint and Prettier presets
+├── e2e/           # Playwright tests
 ├── docs/decisions # Architecture Decision Records
 └── docker-compose.yml
 ```
 
-`packages/shared`, `packages/board-doc`, `packages/db` and `e2e/` arrive with the phases that need them.
+`packages/board-doc` arrives with the collaborative board (phase 2).
 
 ## Roadmap
 
 - [x] **Phase 0 — Foundation:** monorepo, shared configs, Docker Compose, CI.
-- [ ] **Phase 1 — Auth and workspaces (REST).**
+- [x] **Phase 1 — Auth and workspaces (REST):** auth with rotating refresh tokens, workspaces, members, invitations, boards list.
 - [ ] **Phase 2 — Collaborative board (core).**
 - [ ] **Phase 3 — Presence, offline and undo.**
 - [ ] **Phase 4 — Product features.**

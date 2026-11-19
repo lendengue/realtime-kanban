@@ -12,7 +12,7 @@ declare module 'i18next' {
   }
 }
 
-// English only for now; more languages are added as extra resource bundles (see ADR 0011).
+// English only for now; more languages are added as extra resource bundles (see docs/decisions/0014).
 void i18n.use(initReactI18next).init({
   lng: 'en',
   fallbackLng: 'en',
