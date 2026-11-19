@@ -1,0 +1,38 @@
+{
+  "name": "@realtime-kanban/board-doc",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Yjs board document schema and pure, testable operations.",
+  "license": "MIT",
+  "type": "module",
+  "exports": {
+    ".": {
+      "@realtime-kanban/source": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run --coverage"
+  },
+  "dependencies": {
+    "fractional-indexing": "4.0.0",
+    "yjs": "13.6.33",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "@realtime-kanban/config": "workspace:*",
+    "@types/node": "22.20.5",
+    "@vitest/coverage-v8": "5.1.1",
+    "eslint": "10.15.0",
+    "fast-check": "4.10.3",
+    "typescript": "6.0.3",
+    "vitest": "5.1.1"
+  }
+}
