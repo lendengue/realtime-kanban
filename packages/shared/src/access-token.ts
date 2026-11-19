@@ -8,6 +8,10 @@ export interface AccessTokenClaims {
   userId: string;
 }
 
+/**
+ * Issues and verifies the short-lived access tokens (HS256). Used by the API to sign and by the
+ * collab server to verify, with the same shared secret (ADR 0010).
+ */
 export class AccessTokenService {
   readonly #key: Uint8Array;
 

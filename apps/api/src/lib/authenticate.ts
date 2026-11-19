@@ -1,6 +1,6 @@
 import type { FastifyRequest, preHandlerAsyncHookHandler } from 'fastify';
 
-import type { AccessTokenService } from './access-token.js';
+import type { AccessTokenService } from '@realtime-kanban/shared/access-token';
 import { unauthenticated } from './errors.js';
 
 declare module 'fastify' {

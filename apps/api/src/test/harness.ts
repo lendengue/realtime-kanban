@@ -6,7 +6,7 @@ import { afterAll, beforeAll, beforeEach, inject } from 'vitest';
 
 import { buildApp } from '../app.js';
 import { loadEnv } from '../env.js';
-import { AccessTokenService } from '../lib/access-token.js';
+import { AccessTokenService } from '@realtime-kanban/shared/access-token';
 import { MemoryMailer } from '../lib/mailer.js';
 import { REFRESH_COOKIE } from '../modules/auth/routes.js';
 

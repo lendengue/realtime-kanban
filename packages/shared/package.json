@@ -10,6 +10,11 @@
       "@realtime-kanban/source": "./src/index.ts",
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
+    },
+    "./access-token": {
+      "@realtime-kanban/source": "./src/access-token.ts",
+      "types": "./dist/access-token.d.ts",
+      "default": "./dist/access-token.js"
     }
   },
   "files": [
@@ -22,6 +27,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "jose": "6.2.17",
     "zod": "4.6.7"
   },
   "devDependencies": {

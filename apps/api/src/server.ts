@@ -2,7 +2,7 @@ import { createDatabase } from '@realtime-kanban/db';
 
 import { buildApp } from './app.js';
 import { loadEnv } from './env.js';
-import { AccessTokenService } from './lib/access-token.js';
+import { AccessTokenService } from '@realtime-kanban/shared/access-token';
 import { SmtpMailer } from './lib/mailer.js';
 
 const config = loadEnv();
