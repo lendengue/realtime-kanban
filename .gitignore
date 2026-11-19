@@ -1,0 +1,39 @@
+# Local-only notes and specs (never versioned)
+.local/
+
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+build/
+*.tsbuildinfo
+
+# Tooling caches
+.turbo/
+.eslintcache
+coverage/
+.vite/
+
+# Environment files (each app ships a .env.example instead)
+.env
+.env.*
+!.env.example
+
+# Playwright
+playwright-report/
+test-results/
+blob-report/
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
