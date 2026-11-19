@@ -24,6 +24,9 @@
     "noUnusedParameters": true,
     "useUnknownInCatchVariables": true,
 
-    "types": []
+    "types": [],
+
+    // Resolve internal @realtime-kanban/* packages to their TypeScript sources (see ADR 0009).
+    "customConditions": ["@realtime-kanban/source"]
   }
 }
