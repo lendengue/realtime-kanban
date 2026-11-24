@@ -1,5 +1,6 @@
 import { Database as DatabaseExtension } from '@hocuspocus/extension-database';
-import { Server } from '@hocuspocus/server';
+import { Server, type onTokenSyncPayload } from '@hocuspocus/server';
+import { upgradeBoard } from '@realtime-kanban/board-doc';
 import type { Database } from '@realtime-kanban/db';
 import type { AccessTokenService } from '@realtime-kanban/shared/access-token';
 import type { Logger } from 'pino';
@@ -24,13 +25,25 @@ export interface ConnectionContext extends BoardAccess {
   boardId: string;
 }
 
-/** Thrown to reject a connection; Hocuspocus reports it to the client as an auth failure. */
+/**
+ * Thrown to reject a connection (reported to the client as an authentication failure) or, from
+ * `onTokenSync`, to close it. Hocuspocus reads `reason` and sends it to the client.
+ */
 export class AccessDeniedError extends Error {
+  readonly reason: string;
+
   constructor(reason: string) {
     super(reason);
     this.name = 'AccessDeniedError';
+    this.reason = reason;
   }
 }
+
+/** Close reason sent when a renewed token carries a different role: the client reconnects. */
+export const PERMISSIONS_CHANGED = 'permissions-changed';
+
+/** Transaction origin of server-side schema upgrades. */
+const UPGRADE_ORIGIN = 'realtime-kanban:upgrade';
 
 export function createCollabServer({
   host,
@@ -94,6 +107,29 @@ export function createCollabServer({
         'connection authenticated',
       );
       return { userId: claims.userId, boardId, ...access };
+    },
+
+    // Clients send a renewed access token on the open connection whenever their session is
+    // refreshed (ADR 0022). It must still be valid and belong to the same user; the role is
+    // checked again, so a removed member is disconnected and a changed role reconnects with the
+    // new scope.
+    onTokenSync: async ({ token, context, connection }: onTokenSyncPayload<ConnectionContext>) => {
+      const claims = await accessTokens.verify(token);
+      if (claims?.userId !== context.userId) {
+        throw new AccessDeniedError('invalid-token');
+      }
+      const access = await getBoardAccess(db, context.boardId, context.userId);
+      if (!access) throw new AccessDeniedError('forbidden');
+      if (access.readOnly !== connection.readOnly) {
+        logger.debug({ boardId: context.boardId, userId: context.userId }, 'scope changed');
+        connection.close({ code: 4000, reason: PERMISSIONS_CHANGED });
+      }
+    },
+
+    afterLoadDocument: ({ document, documentName }) => {
+      const upgraded = upgradeBoard(document, { origin: UPGRADE_ORIGIN });
+      if (upgraded > 0) logger.info({ documentName, upgraded }, 'document upgraded');
+      return Promise.resolve();
     },
 
     extensions: [

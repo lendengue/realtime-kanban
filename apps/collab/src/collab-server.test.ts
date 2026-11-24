@@ -1,16 +1,32 @@
-import { createCard, readBoard, setBoardTitle } from '@realtime-kanban/board-doc';
+import {
+  createCard,
+  getCardDescription,
+  getCards,
+  initializeBoard,
+  readBoard,
+  setBoardTitle,
+} from '@realtime-kanban/board-doc';
 import { schema } from '@realtime-kanban/db';
 import { eq } from 'drizzle-orm';
 import { describe, expect, it, vi } from 'vitest';
 import * as Y from 'yjs';
 
-import { seedBoard, useCollabServer } from './test/harness.js';
+import { PERMISSIONS_CHANGED } from './collab-server.js';
+import { seedBoard, useCollabServer, type ConnectedClient } from './test/harness.js';
 
 const firstColumnId = (doc: Y.Doc) => {
   const id = readBoard(doc).columns[0]?.id;
   if (!id) throw new Error('board has no columns');
   return id;
 };
+
+/** Resolves with the reason of the next document-level close sent by the server. */
+const nextClose = (client: ConnectedClient) =>
+  new Promise<string>((resolve) => {
+    client.provider.on('close', ({ event }: { event: { reason: string } }) =>
+      resolve(event.reason),
+    );
+  });
 
 const cardTitles = (doc: Y.Doc) =>
   readBoard(doc).columns.flatMap((column) => column.cards.map((card) => card.title));
@@ -161,5 +177,106 @@ describe('collab server', () => {
       await owner.synced;
       expect(owner.provider.authorizedScope).toBe('readonly');
     });
+  });
+  describe('token renewal on an open connection', () => {
+    it('accepts a renewed token for the same user and keeps syncing', async () => {
+      const { boardId, users, tokens } = await seedBoard(t, ['owner', 'member']);
+      const alice = t.connect({ boardId, token: tokens[0]! });
+      const bob = t.connect({ boardId, token: tokens[1]! });
+      await Promise.all([alice.synced, bob.synced]);
+
+      alice.provider.configuration.token = await t.tokens.sign({ userId: users[0]!.id });
+      await alice.provider.sendToken();
+      createCard(alice.doc, {
+        columnId: firstColumnId(alice.doc),
+        title: 'After renewal',
+        createdBy: users[0]!.id,
+      });
+      await vi.waitFor(() => expect(cardTitles(bob.doc)).toEqual(['After renewal']));
+      expect(alice.provider.isAuthenticated).toBe(true);
+    });
+
+    it('closes the connection when the token belongs to someone else', async () => {
+      const { boardId, tokens } = await seedBoard(t, ['owner', 'member']);
+      const alice = t.connect({ boardId, token: tokens[0]! });
+      await alice.synced;
+      const closed = nextClose(alice);
+      alice.provider.configuration.token = tokens[1]!;
+      await alice.provider.sendToken();
+      expect(await closed).toBe('invalid-token');
+    });
+
+    it('closes the connection when the token is invalid', async () => {
+      const { boardId, tokens } = await seedBoard(t, ['owner']);
+      const alice = t.connect({ boardId, token: tokens[0]! });
+      await alice.synced;
+      const closed = nextClose(alice);
+      alice.provider.configuration.token = 'expired-or-forged';
+      await alice.provider.sendToken();
+      expect(await closed).toBe('invalid-token');
+    });
+
+    it('disconnects a member who was removed from the workspace', async () => {
+      const { boardId, users, tokens } = await seedBoard(t, ['owner', 'member']);
+      const bob = t.connect({ boardId, token: tokens[1]! });
+      await bob.synced;
+      await t.database.db
+        .delete(schema.workspaceMembers)
+        .where(eq(schema.workspaceMembers.userId, users[1]!.id));
+
+      const closed = nextClose(bob);
+      await bob.provider.sendToken();
+      expect(await closed).toBe('forbidden');
+    });
+
+    it('asks the client to reconnect when the role changed', async () => {
+      const { boardId, users, tokens } = await seedBoard(t, ['owner', 'member']);
+      const bob = t.connect({ boardId, token: tokens[1]! });
+      await bob.synced;
+      expect(bob.provider.authorizedScope).toBe('read-write');
+      await t.database.db
+        .update(schema.workspaceMembers)
+        .set({ role: 'viewer' })
+        .where(eq(schema.workspaceMembers.userId, users[1]!.id));
+
+      const closed = nextClose(bob);
+      await bob.provider.sendToken();
+      expect(await closed).toBe(PERMISSIONS_CHANGED);
+    });
+  });
+
+  it('upgrades legacy documents on load and stores the result', async () => {
+    const { boardId, users, tokens } = await seedBoard(t, ['owner']);
+    // A document written before descriptions became rich text.
+    const legacy = new Y.Doc();
+    initializeBoard(legacy, { title: 'Legacy' });
+    const cardId = createCard(legacy, {
+      columnId: firstColumnId(legacy),
+      title: 'Old card',
+      createdBy: users[0]!.id,
+    });
+    const text = new Y.Text();
+    getCards(legacy).get(cardId)!.set('description', text);
+    text.insert(0, 'Line 1\nLine 2');
+    await t.database.db
+      .insert(schema.boardDocuments)
+      .values({ boardId, state: Y.encodeStateAsUpdate(legacy) });
+
+    const alice = t.connect({ boardId, token: tokens[0]! });
+    await alice.synced;
+    expect(getCardDescription(alice.doc, cardId)).toBeInstanceOf(Y.XmlFragment);
+    expect(readBoard(alice.doc).columns[0]?.cards[0]?.description).toBe('Line 1\nLine 2');
+
+    await vi.waitFor(
+      async () => {
+        const row = await t.database.db.query.boardDocuments.findFirst({
+          where: eq(schema.boardDocuments.boardId, boardId),
+        });
+        const stored = new Y.Doc();
+        Y.applyUpdate(stored, row!.state);
+        expect(getCards(stored).get(cardId)?.get('description')).toBeInstanceOf(Y.XmlFragment);
+      },
+      { timeout: 5000, interval: 100 },
+    );
   });
 });
