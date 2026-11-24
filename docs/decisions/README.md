@@ -22,3 +22,8 @@ using the next free number. Never rewrite an accepted ADR; supersede it with a n
 | [0015](0015-board-document-operations.md)             | Board document operation semantics                           | Accepted |
 | [0016](0016-collab-server-auth-and-persistence.md)    | Collaboration server: authentication and persistence         | Accepted |
 | [0017](0017-board-ui.md)                              | Board UI: drag and drop and connection lifecycle             | Accepted |
+| [0018](0018-presence.md)                              | Presence over Yjs awareness                                  | Accepted |
+| [0019](0019-offline-first.md)                         | Offline-first board documents                                | Accepted |
+| [0020](0020-per-user-undo.md)                         | Per-user undo and redo                                       | Accepted |
+| [0021](0021-rich-text-description.md)                 | Card descriptions as `Y.XmlFragment`                         | Accepted |
+| [0022](0022-token-renewal-and-e2e-ci.md)              | Token renewal on live connections and E2E tests in CI        | Accepted |

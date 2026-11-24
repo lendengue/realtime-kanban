@@ -5,7 +5,7 @@
 [![CI](https://github.com/lendengue/realtime-kanban/actions/workflows/ci.yml/badge.svg)](https://github.com/lendengue/realtime-kanban/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-> 🚧 **Work in progress.** Phases 0–2 (foundation, auth and workspaces, collaborative board) are done. See the [roadmap](#roadmap).
+> 🚧 **Work in progress.** Phases 0–3 (foundation, auth and workspaces, collaborative board, presence/offline/undo) are done. See the [roadmap](#roadmap).
 
 <!-- TODO(phase 5): GIF of two windows syncing side by side. -->
 
@@ -15,9 +15,18 @@ _Coming in Phase 5._ Demo accounts will be `alice@demo.dev` / `bob@demo.dev` (pa
 
 ## Features
 
-_Planned:_ real-time collaboration through CRDTs (Yjs), offline-first editing with IndexedDB,
-live presence and cursors, per-user undo/redo, conflict-free card ordering with fractional indexing,
-and a horizontally scalable collaboration server.
+- **Real-time collaboration** through CRDTs (Yjs): columns and cards edited by several people at
+  once, with conflict-free ordering (fractional indexing) and keyboard-accessible drag and drop.
+- **Offline-first:** each board is cached in IndexedDB; keep working without a connection and your
+  changes sync on reconnect. A status badge shows Online / Offline / Syncing.
+- **Presence:** avatars of who is on the board, live cursors with names and an "editing…" marker
+  on the card someone is working on.
+- **Per-user undo/redo** (`Ctrl+Z` / `Ctrl+Shift+Z`) that never reverts someone else's change.
+- **Collaborative card descriptions:** a rich text editor (TipTap) with everyone's carets.
+- Workspaces with roles (owner, admin, member, viewer), e-mail invitations and read-only viewers.
+
+_Planned:_ labels, assignees, due dates, checklists, search and filters, version history (phase 4)
+and a horizontally scalable collaboration server (phase 5).
 
 ## How it works
 
@@ -36,8 +45,23 @@ The collaboration server authenticates each WebSocket with the same short-lived 
 API, checks the user's role in Postgres (viewers connect read-only) and persists the document as a
 binary blob with debounced writes.
 
-_Offline-first and Redis scaling are described as they land (phases 3 and 5)._ All architecture
-decisions are recorded in [`docs/decisions/`](docs/decisions/).
+**Offline-first.** The browser keeps a copy of every open board in IndexedDB (`y-indexeddb`), so a
+board opens from the local copy before the server answers. When the network drops, edits keep
+going into the local document; on reconnect, the Yjs sync handshake exchanges only what each side is
+missing, and the CRDT merges it with what others did meanwhile. Local copies are per user and are
+deleted on sign-out.
+
+**Presence** uses Yjs _awareness_, an ephemeral side channel: each client publishes its user, color,
+pointer position (at most every 50 ms) and the card it is viewing or editing. Nothing of it is
+stored, and remote states are validated before they are rendered.
+
+**Undo/redo is per user.** Every local change is made in a transaction with a tab-specific origin,
+and the `Y.UndoManager` tracks only that origin, so `Ctrl+Z` reverts your last action and never a
+change that came from someone else. Undoing an old move does not override a newer move made by a
+teammate.
+
+_Redis scaling is described when it lands (phase 5)._ All architecture decisions are recorded in
+[`docs/decisions/`](docs/decisions/).
 
 ## Stack
 
@@ -87,6 +111,7 @@ pnpm lint          # ESLint in every workspace
 pnpm typecheck     # tsc in every workspace
 pnpm test          # Vitest in every workspace (API integration tests need Docker)
 pnpm test:e2e      # Playwright against a running `pnpm dev` (first: pnpm --filter @realtime-kanban/e2e exec playwright install chromium)
+                   # two browsers as alice and bob: real-time edits, presence, offline sync, per-user undo
 pnpm db:generate   # generate a migration after changing packages/db/src/schema.ts
 pnpm build         # production builds
 pnpm format        # Prettier
@@ -116,7 +141,7 @@ realtime-kanban/
 - [x] **Phase 0 — Foundation:** monorepo, shared configs, Docker Compose, CI.
 - [x] **Phase 1 — Auth and workspaces (REST):** auth with rotating refresh tokens, workspaces, members, invitations, boards list.
 - [x] **Phase 2 — Collaborative board (core):** Yjs document + convergence tests, Hocuspocus with auth and Postgres persistence, board UI with keyboard-accessible drag and drop.
-- [ ] **Phase 3 — Presence, offline and undo.**
+- [x] **Phase 3 — Presence, offline and undo:** avatars, live cursors and "editing…", IndexedDB cache with offline sync and status, per-user undo/redo, collaborative rich text descriptions, E2E in CI.
 - [ ] **Phase 4 — Product features.**
 - [ ] **Phase 5 — Scale and deploy.**
 

@@ -1,7 +1,8 @@
 import { expect, type Browser, type Page } from '@playwright/test';
 
 // Note: login is rate limited to 5 attempts/min per IP and e-mail; rerunning the suites many times
-// within a minute will fail with "Too many attempts".
+// within a minute fails with "Too many attempts" unless the API runs with a higher
+// LOGIN_RATE_LIMIT_PER_MINUTE (as in CI).
 export async function signIn(page: Page, email: string) {
   await page.goto('/login');
   await page.getByLabel('E-mail').fill(email);
