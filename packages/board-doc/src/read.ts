@@ -1,6 +1,7 @@
 import type * as Y from 'yjs';
 
 import { comparePositioned } from './position.js';
+import { richTextToPlainText } from './rich-text.js';
 import {
   getCards,
   getColumns,
@@ -8,6 +9,7 @@ import {
   getMeta,
   readArray,
   readBoolean,
+  readFragment,
   readNumber,
   readOptionalString,
   readString,
@@ -64,6 +66,13 @@ export interface BoardView {
 
 const unique = (values: string[]) => [...new Set(values)];
 
+/** Plain text of the description (legacy `Y.Text` descriptions are read as they are). */
+function descriptionText(map: YRecord): string {
+  const fragment = readFragment(map, 'description');
+  if (fragment) return richTextToPlainText(fragment);
+  return readText(map, 'description')?.toJSON() ?? '';
+}
+
 export function readCard(id: string, map: YRecord): CardView {
   const checklist = readArray<YRecord>(map, 'checklist')?.toArray() ?? [];
   return {
@@ -71,7 +80,7 @@ export function readCard(id: string, map: YRecord): CardView {
     columnId: readString(map, 'columnId'),
     position: readString(map, 'position'),
     title: readString(map, 'title'),
-    description: readText(map, 'description')?.toJSON() ?? '',
+    description: descriptionText(map),
     // Concurrent toggles can insert the same value twice; the view de-duplicates.
     labels: unique(readArray<string>(map, 'labels')?.toArray() ?? []),
     assigneeIds: unique(readArray<string>(map, 'assigneeIds')?.toArray() ?? []),

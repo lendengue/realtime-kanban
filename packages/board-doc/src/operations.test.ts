@@ -25,6 +25,7 @@ import {
   updateCard,
 } from './operations.js';
 import { readBoard } from './read.js';
+import { plainTextToParagraphs } from './rich-text.js';
 import { getCards } from './schema.js';
 
 function board() {
@@ -245,13 +246,13 @@ describe('cards', () => {
     expect(() => restoreCard(doc, a)).toThrow(/no columns/);
   });
 
-  it('exposes the collaborative description', () => {
+  it('exposes the collaborative rich text description', () => {
     const { doc, todo } = board();
     const a = createCard(doc, { columnId: todo, title: 'A', createdBy: 'u1' });
-    getCardDescription(doc, a).insert(0, 'Hello');
+    getCardDescription(doc, a).insert(0, plainTextToParagraphs('Hello'));
     expect(readBoard(doc).columns[0]?.cards[0]?.description).toBe('Hello');
-    getCards(doc).get(a)?.set('description', 'not a Y.Text');
-    expect(() => getCardDescription(doc, a)).toThrow(/no description/);
+    getCards(doc).get(a)?.set('description', 'not rich text');
+    expect(() => getCardDescription(doc, a)).toThrow(/no rich text description/);
   });
 });
 

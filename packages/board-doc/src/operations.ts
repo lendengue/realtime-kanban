@@ -163,7 +163,7 @@ export function createCard(
         columnId,
         position,
         title: clean(title),
-        description: new Y.Text(),
+        description: new Y.XmlFragment(),
         labels: new Y.Array<string>(),
         assigneeIds: new Y.Array<string>(),
         checklist: new Y.Array<YRecord>(),
@@ -243,12 +243,17 @@ export function restoreCard(doc: Y.Doc, cardId: string, options: OperationOption
   }, options.origin);
 }
 
-/** The collaborative description, edited directly by the rich text editor. */
-export function getCardDescription(doc: Y.Doc, cardId: string): Y.Text {
+/**
+ * The collaborative description, bound directly to the rich text editor (TipTap's binding needs a
+ * `Y.XmlFragment`, see ADR 0021).
+ */
+export function getCardDescription(doc: Y.Doc, cardId: string): Y.XmlFragment {
   const card = requireRecord(getCards(doc), cardId, 'Card');
-  const text = card.get('description');
-  if (!(text instanceof Y.Text)) throw new Error(`Card ${cardId} has no description text`);
-  return text;
+  const fragment = card.get('description');
+  if (!(fragment instanceof Y.XmlFragment)) {
+    throw new Error(`Card ${cardId} has no rich text description`);
+  }
+  return fragment;
 }
 
 function toggleInArray(card: YRecord, key: string, value: string): void {
