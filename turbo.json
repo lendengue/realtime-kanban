@@ -18,7 +18,8 @@
     },
     "dev": {
       "cache": false,
-      "persistent": true
+      "persistent": true,
+      "passThroughEnv": ["LOGIN_RATE_LIMIT_PER_MINUTE"]
     }
   }
 }
