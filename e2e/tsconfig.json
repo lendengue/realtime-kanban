@@ -1,7 +1,9 @@
 {
   "extends": "@realtime-kanban/config/tsconfig/node.json",
   "compilerOptions": {
-    "noEmit": true
+    "noEmit": true,
+    // Callbacks passed to page.evaluate() run in the browser.
+    "lib": ["ES2023", "DOM"]
   },
   "include": ["tests", "*.config.ts"]
 }
