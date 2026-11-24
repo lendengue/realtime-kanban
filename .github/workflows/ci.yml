@@ -59,3 +59,66 @@ jobs:
 
       - name: Build
         run: pnpm build
+
+  e2e:
+    name: End-to-end tests (Playwright)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      # Playwright retries failed tests and every test signs two users in; the spec's limit of
+      # 5 logins/min per IP + e-mail would turn one flaky test into a cascade of failures.
+      LOGIN_RATE_LIMIT_PER_MINUTE: '100'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v6
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Prepare environment files
+        run: |
+          cp apps/api/.env.example apps/api/.env
+          cp apps/collab/.env.example apps/collab/.env
+          cp packages/db/.env.example packages/db/.env
+
+      - name: Start infrastructure (Docker Compose)
+        run: pnpm infra:up
+
+      - name: Migrate and seed the database
+        run: |
+          pnpm db:migrate
+          pnpm db:seed
+
+      - name: Install Playwright browser
+        run: pnpm --filter @realtime-kanban/e2e exec playwright install --with-deps chromium
+
+      - name: Start api, collab and web
+        run: |
+          pnpm dev:apps > apps.log 2>&1 &
+          for url in http://localhost:3000/health http://localhost:1234/health http://localhost:5173; do
+            timeout 120 bash -c "until curl -sf $url > /dev/null; do sleep 1; done" \
+              || { echo "$url did not come up"; cat apps.log; exit 1; }
+          done
+
+      - name: Run Playwright
+        run: pnpm test:e2e
+
+      - name: Upload Playwright report, traces and videos
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-report
+          path: |
+            e2e/playwright-report/
+            e2e/test-results/
+            apps.log
+          retention-days: 14
