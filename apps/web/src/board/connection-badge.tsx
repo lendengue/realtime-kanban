@@ -6,20 +6,26 @@ import { cn } from '@/lib/utils';
 import type { ConnectionStatus } from './use-board-connection';
 
 const dot: Record<ConnectionStatus, string> = {
-  connected: 'bg-emerald-500',
+  online: 'bg-emerald-500',
+  syncing: 'bg-sky-500 animate-pulse',
   connecting: 'bg-amber-500',
-  disconnected: 'bg-zinc-400',
+  offline: 'bg-zinc-400',
   forbidden: 'bg-destructive',
 };
 
-export function ConnectionBadge({ status, synced }: { status: ConnectionStatus; synced: boolean }) {
+export function ConnectionBadge({ status }: { status: ConnectionStatus }) {
   const { t } = useTranslation();
-  const label =
-    status === 'connected' && !synced ? t('board.status.syncing') : t(`board.status.${status}`);
   return (
-    <Badge variant="outline" role="status" aria-live="polite" data-testid="connection-status">
+    <Badge
+      variant="outline"
+      role="status"
+      aria-live="polite"
+      title={t(`board.statusHint.${status}`)}
+      data-testid="connection-status"
+      data-status={status}
+    >
       <span className={cn('size-2 rounded-full', dot[status])} aria-hidden />
-      {label}
+      {t(`board.status.${status}`)}
     </Badge>
   );
 }

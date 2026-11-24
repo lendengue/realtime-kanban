@@ -11,10 +11,15 @@ import { AddCard } from './add-card';
 import { CardItem } from './card-item';
 import { cardDragId, columnDragId } from './dnd';
 import { InlineEdit } from './inline-edit';
+import type { PresenceUser } from './presence';
+
+const NO_EDITORS: PresenceUser[] = [];
 
 interface ColumnItemProps {
   column: ColumnView;
   readOnly: boolean;
+  editorsByCard: Record<string, PresenceUser[]>;
+  onOpenCard: (cardId: string) => void;
   onRename: (columnId: string, title: string) => void;
   onArchive: (columnId: string) => void;
   onAddCard: (columnId: string, title: string) => void;
@@ -24,6 +29,8 @@ interface ColumnItemProps {
 export function ColumnItem({
   column,
   readOnly,
+  editorsByCard,
+  onOpenCard,
   onRename,
   onArchive,
   onAddCard,
@@ -107,7 +114,14 @@ export function ColumnItem({
           aria-label={t('board.cardsIn', { column: column.title })}
         >
           {column.cards.map((card) => (
-            <CardItem key={card.id} card={card} readOnly={readOnly} onArchive={onArchiveCard} />
+            <CardItem
+              key={card.id}
+              card={card}
+              readOnly={readOnly}
+              editors={editorsByCard[card.id] ?? NO_EDITORS}
+              onOpen={onOpenCard}
+              onArchive={onArchiveCard}
+            />
           ))}
         </ul>
       </SortableContext>

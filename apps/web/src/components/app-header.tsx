@@ -14,16 +14,10 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { api } from '@/lib/api';
+import { clearOfflineData } from '@/lib/offline';
 import { session } from '@/lib/session';
 import { useSession } from '@/lib/use-session';
-
-const initials = (name: string) =>
-  name
-    .split(/\s+/)
-    .map((part) => part[0])
-    .join('')
-    .slice(0, 2)
-    .toUpperCase();
+import { initials } from '@/lib/utils';
 
 export function AppHeader() {
   const { t } = useTranslation();
@@ -32,10 +26,15 @@ export function AppHeader() {
   const queryClient = useQueryClient();
 
   const logout = async () => {
+    const current = session.getState();
+    const userId = current.status === 'authenticated' ? current.user.id : undefined;
     await api.auth.logout().catch(() => undefined);
     session.signOut();
     queryClient.clear();
     await router.navigate({ to: '/login' });
+    // Offline copies of boards stay on the device until sign-out (ADR 0019). Run after leaving
+    // the board so its database is closed.
+    await clearOfflineData(userId);
   };
 
   return (

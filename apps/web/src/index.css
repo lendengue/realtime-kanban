@@ -122,3 +122,44 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Rich text description (TipTap). */
+@layer components {
+  .tiptap-content p {
+    @apply my-1;
+  }
+  .tiptap-content h2 {
+    @apply mt-3 mb-1 text-lg font-semibold;
+  }
+  .tiptap-content h3 {
+    @apply mt-2 mb-1 text-base font-semibold;
+  }
+  .tiptap-content ul {
+    @apply my-1 list-disc pl-6;
+  }
+  .tiptap-content ol {
+    @apply my-1 list-decimal pl-6;
+  }
+  .tiptap-content code {
+    @apply rounded bg-muted px-1 font-mono text-sm;
+  }
+  .tiptap-content blockquote {
+    @apply border-l-2 pl-3 text-muted-foreground;
+  }
+  .tiptap-content a {
+    @apply text-primary underline;
+  }
+  .tiptap-content p.is-editor-empty:first-child::before {
+    @apply pointer-events-none float-left h-0 text-muted-foreground;
+    content: attr(data-placeholder);
+  }
+
+  /* Remote carets in the description editor. */
+  .collaboration-caret {
+    @apply pointer-events-none relative -mx-px border-x;
+    word-break: normal;
+  }
+  .collaboration-caret__label {
+    @apply absolute -top-[1.4em] -left-px rounded rounded-bl-none px-1 py-px text-xs leading-normal font-medium whitespace-nowrap text-white select-none;
+  }
+}

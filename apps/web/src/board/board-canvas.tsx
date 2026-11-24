@@ -25,22 +25,42 @@ import {
   renameColumn,
   type BoardView,
 } from '@realtime-kanban/board-doc';
-import { useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import type { Awareness } from 'y-protocols/awareness';
 import type * as Y from 'yjs';
 
 import { InlineCreateForm } from '@/components/inline-create-form';
 
+import { CardDialog } from './card-dialog';
 import { ColumnItem } from './column-item';
 import { columnDragId, parseDragId, resolveCardDrop, resolveColumnDrop } from './dnd';
 import { local } from './origin';
+import { usePeers, type Peer, type PresenceUser } from './presence';
+import { RemoteCursors } from './remote-cursors';
+import { useBroadcastCursor } from './use-broadcast-cursor';
 
 interface BoardCanvasProps {
   doc: Y.Doc;
   view: BoardView;
   userId: string;
   readOnly: boolean;
+  awareness: Awareness;
 }
+
+/** Users editing each card (one entry per user, even with several tabs). */
+function editorsByCard(peers: Peer[]): Record<string, PresenceUser[]> {
+  const result: Record<string, PresenceUser[]> = {};
+  for (const { editingCardId, user } of peers) {
+    if (!editingCardId) continue;
+    const editors = (result[editingCardId] ??= []);
+    if (!editors.some((editor) => editor.id === user.id)) editors.push(user);
+  }
+  return result;
+}
+
+/** Space picks up and drops (Enter also drops); Enter on a card that is not dragged opens it. */
+const keyboardCodes = { start: ['Space'], cancel: ['Escape'], end: ['Space', 'Enter'] };
 
 /** Columns only collide with columns; cards collide with cards and columns. */
 const collisionDetection: CollisionDetection = (args) => {
@@ -51,13 +71,39 @@ const collisionDetection: CollisionDetection = (args) => {
   return closestCorners({ ...args, droppableContainers });
 };
 
-export function BoardCanvas({ doc, view, userId, readOnly }: BoardCanvasProps) {
+export function BoardCanvas({ doc, view, userId, readOnly, awareness }: BoardCanvasProps) {
   const { t } = useTranslation();
   const [activeTitle, setActiveTitle] = useState<string | null>(null);
+  const [openCardId, setOpenCardId] = useState<string | null>(null);
+  const dragging = useRef(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const editors = usePeers(awareness, editorsByCard);
+  useBroadcastCursor(awareness, scrollRef);
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates, keyboardCodes }),
   );
+
+  // A pointer drag that ends where it started still fires a click: do not open the card then.
+  const openCard = useCallback((cardId: string) => {
+    if (!dragging.current) setOpenCardId(cardId);
+  }, []);
+  const archiveCardLocally = useCallback(
+    (cardId: string) => archiveCard(doc, cardId, local),
+    [doc],
+  );
+  const endDrag = () => {
+    setActiveTitle(null);
+    setTimeout(() => (dragging.current = false));
+  };
+
+  const openEntry = openCardId
+    ? view.columns
+        .flatMap((column) => column.cards.map((card) => ({ card, column })))
+        .find(({ card }) => card.id === openCardId)
+    : undefined;
+  // The open card was archived, moved out of view or removed (e.g. by someone's undo).
+  if (openCardId && !openEntry) setOpenCardId(null);
 
   const titleOf = (dragId: string | number) => {
     const parsed = parseDragId(dragId);
@@ -66,10 +112,13 @@ export function BoardCanvas({ doc, view, userId, readOnly }: BoardCanvasProps) {
     return view.columns.flatMap((c) => c.cards).find((card) => card.id === parsed.id)?.title ?? '';
   };
 
-  const onDragStart = ({ active }: DragStartEvent) => setActiveTitle(titleOf(active.id));
+  const onDragStart = ({ active }: DragStartEvent) => {
+    dragging.current = true;
+    setActiveTitle(titleOf(active.id));
+  };
 
   const onDragEnd = ({ active, over }: DragEndEvent) => {
-    setActiveTitle(null);
+    endDrag();
     const dragged = parseDragId(active.id);
     if (!dragged || !over) return;
     if (dragged.kind === 'card') {
@@ -87,7 +136,7 @@ export function BoardCanvas({ doc, view, userId, readOnly }: BoardCanvasProps) {
       collisionDetection={collisionDetection}
       onDragStart={onDragStart}
       onDragEnd={onDragEnd}
-      onDragCancel={() => setActiveTitle(null)}
+      onDragCancel={endDrag}
       accessibility={{
         announcements: {
           onDragStart: ({ active }) => t('board.announce.pickedUp', { item: titleOf(active.id) }),
@@ -104,7 +153,12 @@ export function BoardCanvas({ doc, view, userId, readOnly }: BoardCanvasProps) {
         screenReaderInstructions: { draggable: t('board.announce.instructions') },
       }}
     >
-      <div className="flex h-full items-start gap-4 overflow-x-auto pb-4">
+      <div
+        ref={scrollRef}
+        className="relative flex h-full items-start gap-4 overflow-x-auto pb-4"
+        data-testid="board-canvas"
+      >
+        <RemoteCursors awareness={awareness} />
         <SortableContext
           items={view.columns.map((column) => columnDragId(column.id))}
           strategy={horizontalListSortingStrategy}
@@ -114,12 +168,14 @@ export function BoardCanvas({ doc, view, userId, readOnly }: BoardCanvasProps) {
               key={column.id}
               column={column}
               readOnly={readOnly}
+              editorsByCard={editors}
+              onOpenCard={openCard}
               onRename={(columnId, title) => renameColumn(doc, columnId, title, local)}
               onArchive={(columnId) => deleteColumn(doc, columnId, local)}
               onAddCard={(columnId, title) =>
                 createCard(doc, { columnId, title, createdBy: userId }, local)
               }
-              onArchiveCard={(cardId) => archiveCard(doc, cardId, local)}
+              onArchiveCard={archiveCardLocally}
             />
           ))}
         </SortableContext>
@@ -139,6 +195,17 @@ export function BoardCanvas({ doc, view, userId, readOnly }: BoardCanvasProps) {
           </div>
         )}
       </div>
+
+      {openEntry && (
+        <CardDialog
+          doc={doc}
+          card={openEntry.card}
+          columnTitle={openEntry.column.title}
+          awareness={awareness}
+          readOnly={readOnly}
+          onClose={() => setOpenCardId(null)}
+        />
+      )}
 
       <DragOverlay>
         {activeTitle && (
