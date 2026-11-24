@@ -242,6 +242,12 @@ describe('collab server', () => {
       const closed = nextClose(bob);
       await bob.provider.sendToken();
       expect(await closed).toBe(PERMISSIONS_CHANGED);
+
+      // What the web client does next: authenticate the document again on the same socket.
+      await bob.provider.sendToken();
+      bob.provider.startSync();
+      await vi.waitFor(() => expect(bob.provider.authorizedScope).toBe('readonly'));
+      expect(bob.provider.isAuthenticated).toBe(true);
     });
   });
 
