@@ -16,8 +16,12 @@ test('two users edit the same board in real time', async ({ browser }) => {
   await handle.focus();
   await bob.keyboard.press('Space');
   await expect(announcer).toContainText('Hello from Alice is over');
-  await bob.keyboard.press('ArrowRight');
-  await expect(announcer).toContainText('is over In progress');
+  // dnd-kit starts listening for arrow keys one tick after the pick-up, so a key sent right
+  // away can be lost on a busy machine: retry until the move is announced.
+  await expect(async () => {
+    await bob.keyboard.press('ArrowRight');
+    await expect(announcer).toContainText('is over In progress', { timeout: 1000 });
+  }).toPass({ timeout: 10_000 });
   await bob.keyboard.press('Space');
   await expect(announcer).toContainText('was dropped on In progress');
   await expect(card(alice, 'In progress', 'Hello from Alice')).toBeVisible();
