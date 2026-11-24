@@ -15,6 +15,7 @@ describe('loadEnv', () => {
       ACCESS_TOKEN_TTL_SECONDS: 900,
       COOKIE_SECURE: true,
       WEB_ORIGIN: 'http://localhost:5173',
+      LOGIN_RATE_LIMIT_PER_MINUTE: 5,
     });
   });
 

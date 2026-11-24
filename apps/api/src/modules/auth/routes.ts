@@ -19,8 +19,6 @@ export const REFRESH_COOKIE = 'realtime_kanban_rt';
 /** Mounted under /api/v1, so the cookie is only sent to the auth endpoints. */
 export const REFRESH_COOKIE_PATH = '/api/v1/auth';
 
-const LOGIN_RATE_LIMIT = { max: 5, timeWindow: '1 minute' } as const;
-
 const clientInfo = (request: FastifyRequest): ClientInfo => ({
   userAgent: request.headers['user-agent'],
   ip: request.ip,
@@ -79,7 +77,8 @@ export function authRoutes(ctx: AppContext): FastifyPluginCallbackZod {
         },
         config: {
           rateLimit: {
-            ...LOGIN_RATE_LIMIT,
+            max: ctx.config.LOGIN_RATE_LIMIT_PER_MINUTE,
+            timeWindow: '1 minute',
             // Runs after body parsing so the key can combine IP and e-mail.
             hook: 'preHandler',
             keyGenerator: (request: FastifyRequest) => {

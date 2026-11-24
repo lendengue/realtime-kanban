@@ -26,6 +26,8 @@ const envSchema = z.object({
   SMTP_URL: z.url().default('smtp://localhost:1025'),
   MAIL_FROM: z.string().min(1).default('realtime-kanban <no-reply@realtime-kanban.local>'),
   INVITATION_TTL_DAYS: z.coerce.number().int().positive().default(7),
+  /** Login attempts per minute for one IP + e-mail (spec: 5). Raised only for E2E runs in CI. */
+  LOGIN_RATE_LIMIT_PER_MINUTE: z.coerce.number().int().positive().default(5),
 });
 
 export type Env = z.infer<typeof envSchema>;
